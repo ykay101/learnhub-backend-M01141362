@@ -5,6 +5,14 @@ var app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use(function (request, response, next) {
+  console.log(new Date().toISOString() + " " + request.method + " " + request.url);
+  if (request.method == "POST" || request.method == "PUT") {
+    console.log("  Body: " + JSON.stringify(request.body));
+  }
+  next();
+});
+
 app.use(function (request, response) {
   response.status(404).send("Page not found!");
 });
