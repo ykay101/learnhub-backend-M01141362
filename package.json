@@ -1,0 +1,28 @@
+{
+  "name": "learnhub-backend-m01141362",
+  "version": "1.0.0",
+  "description": "LearnHub after-school lessons REST API (Express + MongoDB)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ykay101/learnhub-backend-M01141362.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ykay101/learnhub-backend-M01141362/issues"
+  },
+  "homepage": "https://github.com/ykay101/learnhub-backend-M01141362#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "mongodb": "^7.9.0"
+  }
+}
