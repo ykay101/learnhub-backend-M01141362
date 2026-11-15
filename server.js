@@ -1,5 +1,6 @@
 var express = require("express");
 var cors = require("cors");
+var path = require("path");
 
 var app = express();
 app.use(cors());
@@ -11,6 +12,12 @@ app.use(function (request, response, next) {
     console.log("  Body: " + JSON.stringify(request.body));
   }
   next();
+});
+
+var imagesPath = path.resolve(__dirname, "images");
+app.use("/images", express.static(imagesPath));
+app.use("/images", function (request, response) {
+  response.status(404).send("Image not found!");
 });
 
 app.use(function (request, response) {

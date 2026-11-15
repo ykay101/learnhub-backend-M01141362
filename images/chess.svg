@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
+  <rect width="300" height="200" rx="16" fill="#7f8c8d"/>
+  <text x="150" y="95" font-family="Arial, sans-serif" font-size="56" fill="#fff" text-anchor="middle">♞</text>
+  <text x="150" y="160" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="#fff" text-anchor="middle">Chess</text>
+</svg>
