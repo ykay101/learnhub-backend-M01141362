@@ -1,6 +1,25 @@
 var express = require("express");
 var cors = require("cors");
 var path = require("path");
+require("dotenv").config({ path: "./config.env" });
+
+const { MongoClient, ObjectId } = require("mongodb");
+const uri = process.env.MONGODB_PREFIX +
+  process.env.MONGODB_USERNAME + ":" +
+  process.env.MONGODB_PASSWORD +
+  process.env.MONGODB_URL;
+const client = new MongoClient(uri);
+const db = client.db("learnhub");
+
+async function connectToMongoDB() {
+  try {
+    await client.connect();
+    console.log("You successfully connected to MongoDB!");
+  } catch (err) {
+    console.dir(err);
+  }
+}
+connectToMongoDB();
 
 var app = express();
 app.use(cors());
@@ -18,6 +37,12 @@ var imagesPath = path.resolve(__dirname, "images");
 app.use("/images", express.static(imagesPath));
 app.use("/images", function (request, response) {
   response.status(404).send("Image not found!");
+});
+
+app.get("/lessons", async function (request, response) {
+  let collection = db.collection("lesson");
+  let results = await collection.find({}).toArray();
+  response.send(results);
 });
 
 app.use(function (request, response) {
