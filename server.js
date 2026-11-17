@@ -51,6 +51,17 @@ app.post("/orders", async function (request, response) {
   response.send(result);
 });
 
+app.put("/lessons/:id", async function (request, response) {
+  if (!ObjectId.isValid(request.params.id)) {
+    return response.status(400).send({ message: "Invalid lesson id" });
+  }
+  let collection = db.collection("lesson");
+  const query = { _id: new ObjectId(request.params.id) };
+  const updates = { $set: request.body };
+  let result = await collection.updateOne(query, updates);
+  response.send(result);
+});
+
 app.use(function (request, response) {
   response.status(404).send("Page not found!");
 });
