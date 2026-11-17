@@ -45,6 +45,12 @@ app.get("/lessons", async function (request, response) {
   response.send(results);
 });
 
+app.post("/orders", async function (request, response) {
+  let collection = db.collection("order");
+  let result = await collection.insertOne(request.body);
+  response.send(result);
+});
+
 app.use(function (request, response) {
   response.status(404).send("Page not found!");
 });
