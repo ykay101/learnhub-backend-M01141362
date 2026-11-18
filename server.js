@@ -45,6 +45,21 @@ app.get("/lessons", async function (request, response) {
   response.send(results);
 });
 
+app.get("/search", async function (request, response) {
+  let searchText = request.query.q || "";
+  let safeText = searchText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  let collection = db.collection("lesson");
+  let results = await collection.find({
+    $or: [
+      { topic: { $regex: safeText, $options: "i" } },
+      { location: { $regex: safeText, $options: "i" } },
+      { $expr: { $regexMatch: { input: { $toString: "$price" }, regex: safeText } } },
+      { $expr: { $regexMatch: { input: { $toString: "$space" }, regex: safeText } } }
+    ]
+  }).toArray();
+  response.send(results);
+});
+
 app.post("/orders", async function (request, response) {
   let collection = db.collection("order");
   let result = await collection.insertOne(request.body);
