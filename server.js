@@ -77,6 +77,18 @@ app.put("/lessons/:id", async function (request, response) {
   response.send(result);
 });
 
+app.get("/enrolment/:lessonid", async function (request, response) {
+  let lessonID = request.params.lessonid;
+  let collection = db.collection("order");
+  let orders = await collection.find({ lessonIDs: lessonID }).toArray();
+  let total = 0;
+  for (let order of orders) {
+    let index = order.lessonIDs.indexOf(lessonID);
+    total = total + order.spaces[index];
+  }
+  response.send({ lessonID: lessonID, enrolment: total });
+});
+
 app.get("/teachers", async function (request, response) {
   let collection = db.collection("teacher");
   let results = await collection.find({}).toArray();
