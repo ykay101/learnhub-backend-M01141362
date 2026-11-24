@@ -47,4 +47,4 @@ npm run seed   # optional: resets lessons, teachers and orders
 npm start
 ```
 
-The server runs on port 3000 (or `PORT` if set).
+The server runs on port 5000 (or `PORT` if set).
