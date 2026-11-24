@@ -31,7 +31,7 @@ async function seed() {
   const teachers = [
     { firstName: "Aoife", lastName: "Murphy", lessonIDs: [ids[0], ids[2], ids[5]] },
     { firstName: "Lars", lastName: "Haugen", lessonIDs: [ids[1], ids[6]] },
-    { firstName: "Chinedu", lastName: "Okafor", lessonIDs: [ids[3], ids[4]] },
+    { firstName: "Jamal", lastName: "Iris", lessonIDs: [ids[3], ids[4]] },
     { firstName: "Elif", lastName: "Yilmaz", lessonIDs: [ids[7], ids[8], ids[9]] }
   ];
   await db.collection("teacher").insertMany(teachers);
