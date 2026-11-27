@@ -6,7 +6,7 @@ const uri = process.env.MONGODB_PREFIX +
   process.env.MONGODB_PASSWORD +
   process.env.MONGODB_URL;
 const client = new MongoClient(uri);
-const db = client.db("learnhub");
+const db = client.db(process.env.MONGODB_DB || "learnhub");
 
 async function connectToMongoDB() {
   try {

@@ -5,7 +5,7 @@ const uri = process.env.MONGODB_PREFIX +
   process.env.MONGODB_PASSWORD +
   process.env.MONGODB_URL;
 const client = new MongoClient(uri);
-const db = client.db("learnhub");
+const db = client.db(process.env.MONGODB_DB || "learnhub");
 
 const lessons = [
   { topic: "Maths",    location: "Hendon",        price: 100, space: 5, image: "maths.svg" },
