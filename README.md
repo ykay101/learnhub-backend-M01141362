@@ -1,6 +1,6 @@
-# LearnHub - Back End (M01141362)
+# 2Learn - Back End (M01141362)
 
-CST3144 Full Stack Development coursework. Express.js REST API for the LearnHub lessons app, using MongoDB Atlas with the native Node.js driver.
+CST3144 Full Stack Development coursework. Express.js REST API for the 2Learn lessons app, using MongoDB Atlas with the native Node.js driver.
 
 ## Links
 
@@ -28,6 +28,8 @@ Every request is printed to the console by the logger middleware.
 
 Database `learnhub` with the collections `lesson`, `order` and `teacher`.
 
+Each lesson has `topic`, `location`, `price`, `space` and `image`, plus `day`, `time`, `ageMin`, `ageMax`, `description`, `lat` and `lng`. The seed data lives in `data/lessons.js` (16 lessons, 4 teachers).
+
 ## Running locally
 
 Create `config.env` (not in the repo):
@@ -37,7 +39,10 @@ MONGODB_PREFIX="mongodb+srv://"
 MONGODB_USERNAME="..."
 MONGODB_PASSWORD="..."
 MONGODB_URL="@yourcluster.mongodb.net/"
+MONGODB_DB=learnhub
 ```
+
+`MONGODB_DB` is optional and defaults to `learnhub`.
 
 Then:
 
@@ -45,6 +50,7 @@ Then:
 npm install
 npm run seed   # optional: resets lessons, teachers and orders
 npm start
+npm test       # checks the seed data
 ```
 
 The server runs on port 5000 (or `PORT` if set).
