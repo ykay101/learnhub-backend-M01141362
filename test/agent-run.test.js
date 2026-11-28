@@ -134,3 +134,31 @@ test("model failures become a friendly error", async () => {
   assert.equal(events.at(-1).type, "error");
   assert.doesNotMatch(events.at(-1).message, /upstream/);
 });
+
+test("a bad plan in the last round still returns the valid picks", async () => {
+  let db = makeDb();
+  let art = db.lessons.find(l => l.topic == "Art" && l.location == "Golders Green");
+  let search = { role: "assistant", content: null, tool_calls: [call("s", "search_lessons", { text: "art" })] };
+  let bad = { role: "assistant", content: null, tool_calls: [call("p", "propose_plan", { picks: [{ child: "Mia", age: 8, lessonId: art._id.toString() }, { child: "Leo", age: 12, lessonId: "made-up" }] })] };
+  let client = scripted([search, search, search, search, search, search, search, bad]);
+  let events = await run(client, { db });
+  assert.equal(events.at(-1).type, "plan");
+  assert.equal(events.at(-1).plan.picks.length, 1);
+});
+
+test("only a handful of tool calls run per round", async () => {
+  let many = Array.from({ length: 20 }, (_, i) => call("s" + i, "search_lessons", { text: "art" }));
+  let client = scripted([{ role: "assistant", content: null, tool_calls: many }]);
+  let events = await run(client);
+  assert.ok(events.filter(e => e.type == "step").length <= 6);
+  let replies = client.requests[1].filter(m => m.role == "tool");
+  assert.equal(replies.length, 20);
+});
+
+test("saved children's ages reach plan validation", async () => {
+  let db = makeDb();
+  let coding = db.lessons.find(l => l.topic == "Coding" && l.location == "Finchley");
+  let client = scripted([1, 2, 3].map(n => ({ role: "assistant", content: null, tool_calls: [call(String(n), "propose_plan", { picks: [{ child: "Leo", lessonId: coding._id.toString(), reason: "code" }] })] })));
+  let events = await run(client, { db, profile: { children: [{ name: "Leo", age: 6, interests: "" }] } });
+  assert.equal(events.at(-1).plan.picks.length, 0);
+});

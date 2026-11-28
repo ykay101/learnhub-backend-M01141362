@@ -111,3 +111,55 @@ test("step labels describe what the agent is doing", () => {
   assert.equal(tools.summarise("search_lessons", { lessons: [1, 2] }), "2 found");
   assert.equal(tools.summarise("check_week", { clashes: [] }), "no clashes");
 });
+
+test("saved ages are used even when the model leaves them out", async () => {
+  let db = makeDb();
+  let coding = find(db, "Coding", "Finchley");
+  let result = await tools.validatePlan(db, { picks: [{ child: "Leo", age: null, lessonId: id(coding) }] }, [{ name: "Leo", age: 6 }]);
+  assert.equal(result.ok, false);
+  assert.match(result.errors[0], /ages 11-15/);
+});
+
+test("a pick with no known age is refused in a family plan", async () => {
+  let db = makeDb();
+  let coding = find(db, "Coding", "Finchley");
+  let result = await tools.validatePlan(db, { picks: [{ child: "Zed", lessonId: id(coding) }] }, []);
+  assert.equal(result.ok, false);
+  assert.match(result.errors[0], /age/);
+});
+
+test("hard clashes are removed from the final plan", async () => {
+  let db = makeDb();
+  let art = find(db, "Art", "Golders Green");
+  let english = find(db, "English");
+  let result = await tools.validatePlan(db, { picks: [{ child: "Mia", age: 8, lessonId: id(art) }, { child: "Mia", age: 8, lessonId: id(english) }] });
+  assert.equal(result.ok, false);
+  assert.equal(result.validPicks.length, 1);
+  assert.equal(result.plan.picks.length, 1);
+  assert.equal(result.plan.total, 70);
+});
+
+test("two children cannot take the last space of the same lesson", async () => {
+  let db = makeDb();
+  let art = find(db, "Art", "Golders Green");
+  art.space = 1;
+  let result = await tools.validatePlan(db, { picks: [{ child: "Mia", age: 8, lessonId: id(art) }, { child: "Ivy", age: 8, lessonId: id(art) }] });
+  assert.equal(result.plan.picks.length, 1);
+  assert.match(result.errors[0], /only 1 space/i);
+});
+
+test("broken orders do not break the enrolment tool", async () => {
+  let db = makeDb();
+  let maths = find(db, "Maths");
+  let broken = { ...db, collection: name => name == "order" ? { find: () => ({ toArray: async () => [{ lessonIDs: [id(maths)] }, { lessonIDs: [id(maths)], spaces: ["2"] }] }) } : db.collection(name) };
+  let result = await tools.getEnrolment(broken, { lessonId: id(maths) });
+  assert.equal(result.enrolled, 2);
+});
+
+test("model text is trimmed to a sensible length", async () => {
+  let db = makeDb();
+  let art = find(db, "Art", "Golders Green");
+  let result = await tools.validatePlan(db, { picks: [{ child: "M".repeat(100), age: 8, lessonId: id(art), reason: "x".repeat(900) }] });
+  assert.ok(result.plan.picks[0].reason.length <= 300);
+  assert.ok(result.plan.picks[0].child.length <= 30);
+});

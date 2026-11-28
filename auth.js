@@ -47,6 +47,9 @@ function validateProfile(body) {
     return "You can save up to 6 children";
   }
   for (let child of body.children) {
+    if (!child || typeof child != "object") {
+      return "Please give each child a name using letters only";
+    }
     if (!validName(child.name) || child.name.trim().length > 30) {
       return "Please give each child a name using letters only";
     }

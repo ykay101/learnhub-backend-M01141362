@@ -12,7 +12,14 @@ var auth = require("./auth");
 
 var app = express();
 app.use(cors());
+app.use("/agent", express.json({ limit: "2kb" }));
 app.use(express.json());
+app.use(function (request, response, next) {
+  if (request.body === undefined) {
+    request.body = {};
+  }
+  next();
+});
 
 app.use(function (request, response, next) {
   console.log(new Date().toISOString() + " " + request.method + " " + request.url);
@@ -38,6 +45,17 @@ app.use(agentRouter);
 
 app.use(function (request, response) {
   response.status(404).send("Page not found!");
+});
+
+app.use(function (error, request, response, next) {
+  if (error.type == "entity.too.large") {
+    return response.status(413).send({ error: "That request is too large." });
+  }
+  if (error.type == "entity.parse.failed") {
+    return response.status(400).send({ error: "That request isn't valid JSON." });
+  }
+  console.log("  Server error: " + error.message);
+  response.status(500).send({ error: "Something went wrong. Please try again." });
 });
 
 var port = process.env.PORT || 5000;

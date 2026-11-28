@@ -18,6 +18,8 @@ async function connectToMongoDB() {
     );
     await db.collection("user").createIndex({ email: 1 }, { unique: true });
     await db.collection("session").createIndex({ token: 1 }, { unique: true });
+    await db.collection("session").createIndex({ createdAt: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 });
+    await db.collection("agent_usage").createIndex({ date: 1 }, { unique: true });
   } catch (err) {
     console.dir(err);
   }

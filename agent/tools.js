@@ -59,8 +59,9 @@ async function getEnrolment(db, args) {
   let orders = await db.collection("order").find({ lessonIDs: args.lessonId }).toArray();
   let enrolled = 0;
   for (let order of orders) {
-    let index = order.lessonIDs.indexOf(args.lessonId);
-    enrolled = enrolled + (order.spaces[index] || 0);
+    let index = Array.isArray(order.lessonIDs) ? order.lessonIDs.indexOf(args.lessonId) : -1;
+    let count = Array.isArray(order.spaces) ? Number(order.spaces[index]) : 0;
+    enrolled = enrolled + (count > 0 ? count : 0);
   }
   return { lessonId: args.lessonId, enrolled: enrolled, spacesLeft: lesson.space };
 }
@@ -125,32 +126,46 @@ async function checkWeek(db, args) {
   return { clashes: findClashes(picks) };
 }
 
-async function validatePlan(db, args) {
+function savedAge(savedChildren, name) {
+  let child = (savedChildren || []).find(c => c.name.trim().toLowerCase() == String(name || "").trim().toLowerCase());
+  return child ? child.age : null;
+}
+
+async function validatePlan(db, args, savedChildren) {
   let lessons = await loadLessons(db);
   let errors = [];
   let validPicks = [];
-  for (let pick of args.picks || []) {
+  for (let pick of Array.isArray(args.picks) ? args.picks : []) {
+    let child = String(pick.child || "").trim().slice(0, 30);
     let lesson = lessons.find(l => l._id.toString() == pick.lessonId);
     if (!lesson) {
       errors.push("Lesson " + pick.lessonId + " does not exist. Only use ids from search_lessons.");
       continue;
     }
-    if (!(lesson.space > 0)) {
-      errors.push(lesson.topic + " in " + lesson.location + " has no spaces left.");
+    let used = validPicks.filter(p => p.lesson === lesson).length;
+    if (!(lesson.space > used)) {
+      errors.push(used == 0 ? lesson.topic + " in " + lesson.location + " has no spaces left." : lesson.topic + " in " + lesson.location + " has only " + lesson.space + " space left.");
       continue;
     }
-    if (pick.age && (pick.age < lesson.ageMin || pick.age > lesson.ageMax)) {
-      errors.push(lesson.topic + " in " + lesson.location + " is for ages " + lesson.ageMin + "-" + lesson.ageMax + ", but " + (pick.child || "the child") + " is " + pick.age + ".");
+    let age = savedAge(savedChildren, child) || (Number.isInteger(pick.age) ? pick.age : null);
+    if (child && age == null) {
+      errors.push("Please give " + child + "'s age.");
       continue;
     }
-    validPicks.push({ child: pick.child || "", age: pick.age || null, reason: pick.reason || "", lesson: lesson });
+    if (age != null && (age < lesson.ageMin || age > lesson.ageMax)) {
+      errors.push(lesson.topic + " in " + lesson.location + " is for ages " + lesson.ageMin + "-" + lesson.ageMax + ", but " + (child || "the child") + " is " + age + ".");
+      continue;
+    }
+    let candidate = { child: child, age: age, reason: String(pick.reason || "").slice(0, 300), lesson: lesson };
+    let clash = child ? findClashes(validPicks.filter(p => p.child == child).concat([candidate])).find(c => c.kind == "hard") : null;
+    if (clash) {
+      errors.push(clash.message + ".");
+      continue;
+    }
+    validPicks.push(candidate);
   }
 
   let clashes = findClashes(validPicks.filter(pick => pick.child));
-  for (let clash of clashes.filter(c => c.kind == "hard")) {
-    errors.push(clash.message + ".");
-  }
-
   let budget = Number(args.budget) > 0 ? Number(args.budget) : null;
   let total = validPicks.reduce((sum, pick) => sum + pick.lesson.price, 0);
   let area = findArea(args.area);

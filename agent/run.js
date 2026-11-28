@@ -3,6 +3,7 @@ const { PLANNER_PROMPT, SIMILAR_PROMPT } = require("./prompts");
 
 const MAX_ROUNDS = 8;
 const MAX_PLAN_RETRIES = 2;
+const MAX_CALLS_PER_ROUND = 6;
 
 const pickSchema = {
   type: "object",
@@ -129,8 +130,13 @@ async function runAgent({ client, model, db, mode, message, profile, emit, signa
         continue;
       }
 
-      for (let toolCall of reply.tool_calls) {
+      for (let i = 0; i < reply.tool_calls.length; i++) {
+        let toolCall = reply.tool_calls[i];
         let name = toolCall.function.name;
+        if (i >= MAX_CALLS_PER_ROUND && name != "propose_plan") {
+          messages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify({ error: "Too many tool calls at once. Use fewer." }) });
+          continue;
+        }
         let args = parseArgs(toolCall.function.arguments);
 
         if (args == null) {
@@ -140,8 +146,9 @@ async function runAgent({ client, model, db, mode, message, profile, emit, signa
 
         if (name == "propose_plan") {
           emit({ type: "step", ...tools.describeStep(name, args) });
-          let result = await tools.validatePlan(db, args);
-          if (result.ok || planAttempts >= MAX_PLAN_RETRIES) {
+          let saved = mode == "similar" ? [] : (profile && profile.children) || [];
+          let result = await tools.validatePlan(db, args, saved);
+          if (result.ok || planAttempts >= MAX_PLAN_RETRIES || round == MAX_ROUNDS - 1) {
             let plan = result.plan;
             if (!result.ok) {
               plan.note = (plan.note ? plan.note + " " : "") + "I couldn't fit everything: " + result.errors.join(" ");

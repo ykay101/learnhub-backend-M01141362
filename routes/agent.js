@@ -10,40 +10,62 @@ var router = express.Router();
 const USER_DAILY_LIMIT = 20;
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
 }
 
 function dailyCap() {
-  return Number(process.env.AGENT_DAILY_CAP) || 300;
+  let cap = parseInt(process.env.AGENT_DAILY_CAP, 10);
+  return Number.isInteger(cap) && cap >= 0 ? cap : 300;
 }
 
-async function checkLimits(user) {
-  let runs = user.agentRuns && user.agentRuns.date == today() ? user.agentRuns.count : 0;
-  if (runs >= USER_DAILY_LIMIT) {
-    return "You've used today's " + USER_DAILY_LIMIT + " plans. Please come back tomorrow.";
+async function bumpUser(user, date) {
+  let users = db.collection("user");
+  let updated = await users.findOneAndUpdate({ _id: user._id, "agentRuns.date": date }, { $inc: { "agentRuns.count": 1 } }, { returnDocument: "after" });
+  if (!updated) {
+    updated = await users.findOneAndUpdate({ _id: user._id, "agentRuns.date": { $ne: date } }, { $set: { agentRuns: { date: date, count: 1 } } }, { returnDocument: "after" });
   }
-  let usage = await db.collection("agent_usage").findOne({ date: today() });
-  if (usage && usage.count >= dailyCap()) {
-    return "The planner is very busy today. Please try again tomorrow.";
+  if (!updated) {
+    updated = await users.findOneAndUpdate({ _id: user._id, "agentRuns.date": date }, { $inc: { "agentRuns.count": 1 } }, { returnDocument: "after" });
   }
-  return null;
+  return updated.agentRuns.count;
 }
 
-async function countRun(user) {
+async function bumpGlobal(date) {
+  let usage = db.collection("agent_usage");
+  try {
+    return (await usage.findOneAndUpdate({ date: date }, { $inc: { count: 1 } }, { upsert: true, returnDocument: "after" })).count;
+  } catch (error) {
+    if (error.code != 11000) throw error;
+    return (await usage.findOneAndUpdate({ date: date }, { $inc: { count: 1 } }, { returnDocument: "after" })).count;
+  }
+}
+
+async function releaseRun(user, date) {
+  await db.collection("user").updateOne({ _id: user._id, "agentRuns.date": date }, { $inc: { "agentRuns.count": -1 } });
+  await db.collection("agent_usage").updateOne({ date: date }, { $inc: { count: -1 } });
+}
+
+async function reserveRun(user) {
   let date = today();
-  if (user.agentRuns && user.agentRuns.date == date) {
-    await db.collection("user").updateOne({ _id: user._id }, { $inc: { "agentRuns.count": 1 } });
-  } else {
-    await db.collection("user").updateOne({ _id: user._id }, { $set: { agentRuns: { date: date, count: 1 } } });
+  let mine = await bumpUser(user, date);
+  if (mine > USER_DAILY_LIMIT) {
+    await db.collection("user").updateOne({ _id: user._id, "agentRuns.date": date }, { $inc: { "agentRuns.count": -1 } });
+    return { error: "You've used today's " + USER_DAILY_LIMIT + " plans. Please come back tomorrow." };
   }
-  await db.collection("agent_usage").updateOne({ date: date }, { $inc: { count: 1 } }, { upsert: true });
+  let everyone = await bumpGlobal(date);
+  if (everyone > dailyCap()) {
+    await releaseRun(user, date);
+    return { error: "The planner is very busy today. Please try again tomorrow." };
+  }
+  return { date: date };
 }
 
 async function stream(request, response, mode, message) {
-  let problem = await checkLimits(request.user);
-  if (problem) {
-    return response.status(429).send({ error: problem });
+  let reservation = await reserveRun(request.user);
+  if (reservation.error) {
+    return response.status(429).send({ error: reservation.error });
   }
+  let started = false;
 
   response.setHeader("Content-Type", "application/x-ndjson");
   response.setHeader("Cache-Control", "no-cache");
@@ -63,8 +85,11 @@ async function stream(request, response, mode, message) {
     profile: { homeArea: request.user.homeArea, children: request.user.children || [] },
     emit: event => response.write(JSON.stringify(event) + "\n"),
     signal: controller.signal,
-    onStart: () => countRun(request.user)
+    onStart: () => { started = true; }
   });
+  if (!started) {
+    await releaseRun(request.user, reservation.date);
+  }
   response.end();
 }
 
