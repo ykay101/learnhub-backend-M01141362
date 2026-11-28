@@ -7,6 +7,7 @@ var ordersRouter = require("./routes/orders");
 var teachersRouter = require("./routes/teachers");
 var paymentsRouter = require("./routes/payments");
 var usersRouter = require("./routes/users");
+var agentRouter = require("./routes/agent");
 var auth = require("./auth");
 
 var app = express();
@@ -33,6 +34,7 @@ app.use(ordersRouter);
 app.use(teachersRouter);
 app.use(paymentsRouter);
 app.use(usersRouter);
+app.use(agentRouter);
 
 app.use(function (request, response) {
   response.status(404).send("Page not found!");
