@@ -8,7 +8,7 @@ const uri = process.env.MONGODB_PREFIX +
   process.env.MONGODB_URL;
 const client = new MongoClient(uri);
 if (!process.env.MONGODB_DB) {
-  console.log("Set MONGODB_DB in config.env (for example learnhub) before seeding.");
+  console.log("Set MONGODB_DB in config.env (for example 2learn) before seeding.");
   process.exit(1);
 }
 const db = client.db(process.env.MONGODB_DB);
