@@ -1,19 +1,19 @@
 var express = require("express");
 const db = require("../db");
-const stripe = require("../stripeClient");
+const { stripe, paymentsEnabled } = require("../stripeClient");
 const { createIntent, PaymentError } = require("../payments");
 
 var router = express.Router();
 
 router.get("/payments/config", function (request, response) {
-  if (!stripe || !process.env.STRIPE_PUBLISHABLE_KEY) {
+  if (!paymentsEnabled()) {
     return response.send({ enabled: false });
   }
   response.send({ enabled: true, publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
 });
 
 router.use("/payments", function (request, response, next) {
-  if (!stripe || !process.env.STRIPE_PUBLISHABLE_KEY) {
+  if (!paymentsEnabled()) {
     return response.status(503).send({ error: "Payments are not set up" });
   }
   next();

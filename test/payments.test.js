@@ -129,3 +129,15 @@ test("intents never allow redirect payment methods", async () => {
   await createIntent(fakeDb([art]), stripe, [art._id.toString()], [1]);
   assert.deepEqual(stripe.calls[0].automatic_payment_methods, { enabled: true, allow_redirects: "never" });
 });
+
+const { orderFields } = require("../payments");
+
+test("a lesson with no space value is refused", async () => {
+  let db = fakeDb([{ ...art, space: undefined }]);
+  await rejectsWith(priceOrder(db, [art._id.toString()], [1]), 409);
+});
+
+test("orders keep only the order fields, trimmed", () => {
+  let fields = orderFields({ name: "  Ann Lee ", phone: " 0712 ", lessonIDs: ["a"], spaces: [1], amount: 1, status: "paid", cardLast4: "1" });
+  assert.deepEqual(fields, { name: "Ann Lee", phone: "0712", lessonIDs: ["a"], spaces: [1] });
+});

@@ -7,7 +7,11 @@ const uri = process.env.MONGODB_PREFIX +
   process.env.MONGODB_PASSWORD +
   process.env.MONGODB_URL;
 const client = new MongoClient(uri);
-const db = client.db(process.env.MONGODB_DB || "learnhub");
+if (!process.env.MONGODB_DB) {
+  console.log("Set MONGODB_DB in config.env (for example learnhub) before seeding.");
+  process.exit(1);
+}
+const db = client.db(process.env.MONGODB_DB);
 
 async function seed() {
   await db.collection("lesson").deleteMany({});
@@ -24,6 +28,7 @@ async function seed() {
   }));
   await db.collection("teacher").insertMany(teacherDocs);
 
+  console.log("Seeded database " + process.env.MONGODB_DB + ".");
   console.log("Inserted " + lessons.length + " lessons and " + teacherDocs.length + " teachers.");
   await client.close();
 }

@@ -34,8 +34,8 @@ async function priceOrder(db, lessonIDs, spaces) {
     if (!lesson) {
       throw new PaymentError(400, "Unknown lesson");
     }
-    if (lesson.space < spaces[i]) {
-      throw new PaymentError(409, "Only " + lesson.space + " spaces left for " + lesson.topic);
+    if (!(lesson.space >= spaces[i])) {
+      throw new PaymentError(409, "Only " + (Number(lesson.space) || 0) + " spaces left for " + lesson.topic);
     }
     amount = amount + Math.round(lesson.price * 100) * spaces[i];
   }
@@ -87,4 +87,13 @@ async function verifyPayment(db, stripe, order) {
   return { amount: amount, cardLast4: card ? card.last4 : null };
 }
 
-module.exports = { priceOrder, createIntent, verifyPayment, PaymentError };
+function orderFields(body) {
+  return {
+    name: typeof body.name == "string" ? body.name.trim() : body.name,
+    phone: typeof body.phone == "string" ? body.phone.trim() : body.phone,
+    lessonIDs: body.lessonIDs,
+    spaces: body.spaces
+  };
+}
+
+module.exports = { priceOrder, createIntent, verifyPayment, orderFields, PaymentError };
