@@ -29,8 +29,7 @@ router.get("/search", async function (request, response) {
     $or: [
       { topic: { $regex: safeText, $options: "i" } },
       { location: { $regex: safeText, $options: "i" } },
-      { $expr: { $regexMatch: { input: { $toString: "$price" }, regex: safeText } } },
-      { $expr: { $regexMatch: { input: { $toString: "$space" }, regex: safeText } } }
+      { $expr: { $regexMatch: { input: { $toString: "$price" }, regex: safeText } } }
     ]
   }).toArray();
   response.send(results);

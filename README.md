@@ -15,7 +15,7 @@ CST3144 Full Stack Development coursework. Express.js REST API for the 2Learn le
 | ------ | ----- | ----------- |
 | GET | /lessons | all lessons |
 | PUT | /lessons/:id | update any field of a lesson, e.g. `{ "space": 3 }` |
-| GET | /search?q=text | lessons where topic, location, price or space contains the text |
+| GET | /search?q=text | lessons where topic, location or price contains the text |
 | POST | /orders | save a new order (with `paymentId` it is checked with Stripe and saved as paid) |
 | GET | /enrolment/:lessonid | number of spaces already bought for a lesson |
 | GET | /teachers | all teachers |
@@ -31,8 +31,6 @@ CST3144 Full Stack Development coursework. Express.js REST API for the 2Learn le
 | GET | /orders/mine | the signed-in parent's bookings |
 | POST | /agent/plan | AI "Plan my week": streams the planner's steps and the final plan (sign-in needed) |
 | POST | /agent/similar | AI alternatives for a fully booked lesson (sign-in needed) |
-
-Search runs on the stored lesson data, so the spaces it matches are the ones saved in the database (the front end shows the spaces left after adding to the cart).
 
 Signed-in requests send `Authorization: Bearer <token>`. Passwords are hashed with Node's built-in `crypto.scrypt` and are never logged.
 
