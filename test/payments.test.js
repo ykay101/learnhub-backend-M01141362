@@ -78,6 +78,7 @@ test("createIntent sends pence in gbp", async () => {
   let result = await createIntent(fakeDb([art]), stripe, [art._id.toString()], [1]);
   assert.equal(stripe.calls[0].amount, 7000);
   assert.equal(stripe.calls[0].currency, "gbp");
+  assert.deepEqual(stripe.calls[0].automatic_payment_methods, { enabled: true });
   assert.deepEqual(result, { clientSecret: "pi_1_secret", amount: 7000 });
 });
 
