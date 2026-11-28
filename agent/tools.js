@@ -49,6 +49,14 @@ async function searchLessons(db, args) {
   });
 
   matches.sort((a, b) => b.score - a.score || a.price - b.price);
+  if (matches.length == 0 && words.length > 0) {
+    let relaxed = await searchLessons(db, { age: args.age, maxPrice: args.maxPrice, day: args.day });
+    return {
+      lessons: relaxed.lessons,
+      relaxed: true,
+      note: "No lesson matched \"" + args.text + "\" exactly, so these are all the lessons that fit the other filters. Pick the closest related subject and say why."
+    };
+  }
   return { lessons: matches.slice(0, 12).map(match => summary(match.lesson)) };
 }
 
@@ -191,7 +199,8 @@ function describeStep(name, args) {
   if (name == "search_lessons") {
     let parts = [];
     if (args.age) parts.push("for " + ([8, 11, 18].includes(args.age) ? "an " : "a ") + args.age + "-year-old");
-    if (args.text) parts.push("who likes " + args.text);
+    let keywords = String(args.text || "").split(/[^A-Za-z0-9]+/).filter(word => word.length > 1 && !/^age$|^\d+$/i.test(word)).slice(0, 3);
+    if (keywords.length) parts.push("who likes " + keywords.join(", "));
     if (args.maxPrice) parts.push("under £" + args.maxPrice);
     if (args.day) parts.push("on " + args.day);
     return { icon: "search", label: "Searching lessons" + (parts.length ? " " + parts.join(" ") : "") };
@@ -206,7 +215,7 @@ function describeStep(name, args) {
 function summarise(name, result) {
   if (result.error == "unknown_area") return "area not known";
   if (result.error) return "not found";
-  if (name == "search_lessons") return result.lessons.length + " found";
+  if (name == "search_lessons") return result.relaxed ? "no exact match · " + result.lessons.length + " close" : result.lessons.length + " found";
   if (name == "get_enrolment") return result.enrolled + " booked, " + result.spacesLeft + " spaces left";
   if (name == "distance_from") {
     let values = Object.values(result.miles);

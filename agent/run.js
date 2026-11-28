@@ -21,7 +21,7 @@ const TOOL_SPECS = [
     type: "function",
     function: {
       name: "search_lessons",
-      description: "Search 2Learn lessons. text matches subject, place, description or teacher. Filters are optional.",
+      description: "Search 2Learn lessons. text is one to three short keywords matched against subject, place, description or teacher. If nothing matches, the closest lessons for the other filters are returned with relaxed: true.",
       parameters: {
         type: "object",
         properties: {
