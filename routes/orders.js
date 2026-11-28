@@ -1,25 +1,26 @@
 var express = require("express");
 const db = require("../db");
-const stripe = require("../stripeClient");
-const { verifyPayment, PaymentError } = require("../payments");
+const { stripe, paymentsEnabled } = require("../stripeClient");
+const { verifyPayment, orderFields, PaymentError } = require("../payments");
 
 var router = express.Router();
 
 router.post("/orders", async function (request, response) {
   let order = request.body;
+  let fields = orderFields(order);
+  if (request.user) {
+    fields.userId = request.user._id;
+  }
   let collection = db.collection("order");
 
   if (order.paymentId !== undefined && order.paymentId !== null && order.paymentId !== "") {
-    if (!stripe) {
+    if (!paymentsEnabled()) {
       return response.status(503).send({ error: "Payments are not set up" });
     }
     try {
       let payment = await verifyPayment(db, stripe, order);
       let paidOrder = {
-        name: order.name,
-        phone: order.phone,
-        lessonIDs: order.lessonIDs,
-        spaces: order.spaces,
+        ...fields,
         paymentId: order.paymentId,
         amount: payment.amount,
         cardLast4: payment.cardLast4,
@@ -40,7 +41,7 @@ router.post("/orders", async function (request, response) {
     }
   }
 
-  let result = await collection.insertOne({ ...order, status: "unpaid", createdAt: new Date() });
+  let result = await collection.insertOne({ ...fields, status: "unpaid", createdAt: new Date() });
   response.send(result);
 });
 

@@ -16,6 +16,8 @@ async function connectToMongoDB() {
       { paymentId: 1 },
       { unique: true, partialFilterExpression: { paymentId: { $type: "string" } } }
     );
+    await db.collection("user").createIndex({ email: 1 }, { unique: true });
+    await db.collection("session").createIndex({ token: 1 }, { unique: true });
   } catch (err) {
     console.dir(err);
   }

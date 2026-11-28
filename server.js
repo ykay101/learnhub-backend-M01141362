@@ -6,6 +6,8 @@ var lessonsRouter = require("./routes/lessons");
 var ordersRouter = require("./routes/orders");
 var teachersRouter = require("./routes/teachers");
 var paymentsRouter = require("./routes/payments");
+var usersRouter = require("./routes/users");
+var auth = require("./auth");
 
 var app = express();
 app.use(cors());
@@ -14,7 +16,7 @@ app.use(express.json());
 app.use(function (request, response, next) {
   console.log(new Date().toISOString() + " " + request.method + " " + request.url);
   if (request.method == "POST" || request.method == "PUT") {
-    console.log("  Body: " + JSON.stringify(request.body));
+    console.log("  Body: " + JSON.stringify(auth.cleanLogBody(request.url, request.body || {})));
   }
   next();
 });
@@ -25,10 +27,12 @@ app.use("/images", function (request, response) {
   response.status(404).send("Image not found!");
 });
 
+app.use(auth.readUser);
 app.use(lessonsRouter);
 app.use(ordersRouter);
 app.use(teachersRouter);
 app.use(paymentsRouter);
+app.use(usersRouter);
 
 app.use(function (request, response) {
   response.status(404).send("Page not found!");
