@@ -35,10 +35,10 @@ const lessons = list.map(row => ({
 }));
 
 const teachers = [
-  { firstName: "Aoife", lastName: "Murphy", lessons: [0, 2, 5, 10, 14] },
-  { firstName: "Lars", lastName: "Haugen", lessons: [1, 6, 11, 12] },
-  { firstName: "Jamal", lastName: "Iris", lessons: [3, 4, 13] },
-  { firstName: "Elif", lastName: "Yilmaz", lessons: [7, 8, 9, 15] }
+  { firstName: "Eda", lastName: "Yildiz", lessons: [0, 2, 5, 10, 14] },
+  { firstName: "Jamal", lastName: "Rie", lessons: [1, 6, 11, 12] },
+  { firstName: "Yenefa", lastName: "Aslav", lessons: [3, 4, 13] },
+  { firstName: "Lu", lastName: "Lee", lessons: [7, 8, 9, 15] }
 ];
 
 module.exports = { lessons, teachers };

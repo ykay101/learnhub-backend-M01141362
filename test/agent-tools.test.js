@@ -28,7 +28,7 @@ test("search finds lessons by interest and age", async () => {
   let result = await tools.searchLessons(db, { text: "drawing art", age: 8 });
   let topics = result.lessons.map(l => l.topic + "@" + l.location);
   assert.deepEqual(topics, ["Art@Golders Green"]);
-  assert.equal(result.lessons[0].teacher, "Jamal Iris");
+  assert.equal(result.lessons[0].teacher, "Yenefa Aslav");
 });
 
 test("search filters by price and day", async () => {

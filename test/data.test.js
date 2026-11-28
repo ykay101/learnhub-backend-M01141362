@@ -35,6 +35,6 @@ test("every lesson has exactly one teacher", () => {
   assert.deepEqual(all, [...Array(16).keys()]);
 });
 
-test("teachers are the four from v1", () => {
-  assert.deepEqual(teachers.map(t => t.firstName + " " + t.lastName), ["Aoife Murphy", "Lars Haugen", "Jamal Iris", "Elif Yilmaz"]);
+test("teachers have the expected names", () => {
+  assert.deepEqual(teachers.map(t => t.firstName + " " + t.lastName), ["Eda Yildiz", "Jamal Rie", "Yenefa Aslav", "Lu Lee"]);
 });
