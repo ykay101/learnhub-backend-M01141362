@@ -5,6 +5,7 @@ var path = require("path");
 var lessonsRouter = require("./routes/lessons");
 var ordersRouter = require("./routes/orders");
 var teachersRouter = require("./routes/teachers");
+var paymentsRouter = require("./routes/payments");
 
 var app = express();
 app.use(cors());
@@ -27,6 +28,7 @@ app.use("/images", function (request, response) {
 app.use(lessonsRouter);
 app.use(ordersRouter);
 app.use(teachersRouter);
+app.use(paymentsRouter);
 
 app.use(function (request, response) {
   response.status(404).send("Page not found!");
