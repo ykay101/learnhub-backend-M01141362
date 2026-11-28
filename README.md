@@ -23,6 +23,18 @@ CST3144 Full Stack Development coursework. Express.js REST API for the 2Learn le
 | GET | /images/:file | lesson image, or "Image not found!" |
 | GET | /payments/config | whether card payments are on, and the Stripe publishable key |
 | POST | /payments/intent | creates a Stripe payment for `{ lessonIDs, spaces }`, priced from the database |
+| POST | /auth/register | create an account `{ name, email, password }` |
+| POST | /auth/login | sign in, returns a session token |
+| POST | /auth/logout | end the session |
+| GET | /auth/me | the signed-in parent |
+| PUT | /me/profile | save phone, home area and children |
+| GET | /orders/mine | the signed-in parent's bookings |
+| POST | /agent/plan | AI "Plan my week": streams the planner's steps and the final plan (sign-in needed) |
+| POST | /agent/similar | AI alternatives for a fully booked lesson (sign-in needed) |
+
+Search runs on the stored lesson data, so the spaces it matches are the ones saved in the database (the front end shows the spaces left after adding to the cart).
+
+Signed-in requests send `Authorization: Bearer <token>`. Passwords are hashed with Node's built-in `crypto.scrypt` and are never logged.
 
 Every request is printed to the console by the logger middleware.
 
@@ -46,7 +58,7 @@ MONGODB_URL="@yourcluster.mongodb.net/"
 MONGODB_DB=learnhub
 ```
 
-`MONGODB_DB` is optional and defaults to `learnhub`.
+The server uses `learnhub` if `MONGODB_DB` is not set, but `npm run seed` refuses to run without it so the live data is never reset by accident.
 
 For card payments (Stripe test mode) also add:
 
@@ -57,13 +69,23 @@ STRIPE_PUBLISHABLE_KEY=pk_test_...
 
 Without them the app still works and orders are saved as unpaid.
 
+For the AI planner (OpenAI) add:
+
+```
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-5.4-mini
+AGENT_DAILY_CAP=300
+```
+
+Each parent can run the planner 20 times a day, and `AGENT_DAILY_CAP` limits the total per day. The planner only suggests lessons; prices, spaces, distances and clashes are checked by the server (`agent/tools.js`), and the parent always checks out themselves.
+
 Then:
 
 ```
 npm install
-npm run seed   # optional: resets lessons, teachers and orders
+npm run seed   # optional: resets lessons, teachers and orders (needs MONGODB_DB)
 npm start
-npm test       # checks the seed data
+npm test       # unit tests: seed data, payments, accounts and the planner
 ```
 
 The server runs on port 5000 (or `PORT` if set).
