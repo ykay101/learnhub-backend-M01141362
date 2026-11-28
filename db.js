@@ -12,6 +12,10 @@ async function connectToMongoDB() {
   try {
     await client.connect();
     console.log("You successfully connected to MongoDB!");
+    await db.collection("order").createIndex(
+      { paymentId: 1 },
+      { unique: true, partialFilterExpression: { paymentId: { $type: "string" } } }
+    );
   } catch (err) {
     console.dir(err);
   }

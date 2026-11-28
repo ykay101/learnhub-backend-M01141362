@@ -78,7 +78,6 @@ test("createIntent sends pence in gbp", async () => {
   let result = await createIntent(fakeDb([art]), stripe, [art._id.toString()], [1]);
   assert.equal(stripe.calls[0].amount, 7000);
   assert.equal(stripe.calls[0].currency, "gbp");
-  assert.deepEqual(stripe.calls[0].automatic_payment_methods, { enabled: true });
   assert.deepEqual(result, { clientSecret: "pi_1_secret", amount: 7000 });
 });
 
@@ -103,4 +102,30 @@ test("a payment id can only be used once", async () => {
   let order = { lessonIDs: [art._id.toString()], spaces: [1], paymentId: "pi_1" };
   let db = fakeDb([art], [{ paymentId: "pi_1" }]);
   await rejectsWith(verifyPayment(db, fakeStripe(paidIntent(7000)), order), 409);
+});
+
+test("pence are rounded for prices with decimals", async () => {
+  let db = fakeDb([{ ...art, price: 19.99 }]);
+  let result = await priceOrder(db, [art._id.toString()], [1]);
+  assert.equal(result.amount, 1999);
+});
+
+test("payment id must be a Stripe id string", async () => {
+  let order = { lessonIDs: [art._id.toString()], spaces: [1], paymentId: { $exists: true } };
+  await rejectsWith(verifyPayment(fakeDb([art]), fakeStripe(paidIntent(7000)), order), 400);
+  await rejectsWith(verifyPayment(fakeDb([art]), fakeStripe(paidIntent(7000)), { ...order, paymentId: "abc" }), 400);
+});
+
+test("a lesson that filled up during payment is refunded", async () => {
+  let stripe = fakeStripe(paidIntent(7000));
+  stripe.refunds = { create: async params => { stripe.calls.push({ refund: params }); return { id: "re_1" }; } };
+  let order = { lessonIDs: [art._id.toString()], spaces: [1], paymentId: "pi_1" };
+  await rejectsWith(verifyPayment(fakeDb([{ ...art, space: 0 }]), stripe, order), 409, /refunded/);
+  assert.deepEqual(stripe.calls.find(c => c.refund).refund, { payment_intent: "pi_1" });
+});
+
+test("intents never allow redirect payment methods", async () => {
+  let stripe = fakeStripe();
+  await createIntent(fakeDb([art]), stripe, [art._id.toString()], [1]);
+  assert.deepEqual(stripe.calls[0].automatic_payment_methods, { enabled: true, allow_redirects: "never" });
 });

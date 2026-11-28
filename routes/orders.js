@@ -9,7 +9,7 @@ router.post("/orders", async function (request, response) {
   let order = request.body;
   let collection = db.collection("order");
 
-  if (order.paymentId) {
+  if (order.paymentId !== undefined && order.paymentId !== null && order.paymentId !== "") {
     if (!stripe) {
       return response.status(503).send({ error: "Payments are not set up" });
     }
@@ -31,6 +31,9 @@ router.post("/orders", async function (request, response) {
     } catch (error) {
       if (error instanceof PaymentError) {
         return response.status(error.status).send({ error: error.message });
+      }
+      if (error.code == 11000) {
+        return response.status(409).send({ error: "This payment has already been used for an order" });
       }
       console.log("  Payment check error: " + error.message);
       return response.status(502).send({ error: "We couldn't check the payment right now" });

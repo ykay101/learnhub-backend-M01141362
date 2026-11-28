@@ -37,7 +37,7 @@ async function priceOrder(db, lessonIDs, spaces) {
     if (lesson.space < spaces[i]) {
       throw new PaymentError(409, "Only " + lesson.space + " spaces left for " + lesson.topic);
     }
-    amount = amount + lesson.price * 100 * spaces[i];
+    amount = amount + Math.round(lesson.price * 100) * spaces[i];
   }
 
   return { amount: amount, lessons: lessons };
@@ -48,13 +48,17 @@ async function createIntent(db, stripe, lessonIDs, spaces) {
   let intent = await stripe.paymentIntents.create({
     amount: amount,
     currency: "gbp",
-    automatic_payment_methods: { enabled: true },
+    automatic_payment_methods: { enabled: true, allow_redirects: "never" },
     metadata: { lessonIDs: lessonIDs.join(","), spaces: spaces.join(",") }
   });
   return { clientSecret: intent.client_secret, amount: amount };
 }
 
 async function verifyPayment(db, stripe, order) {
+  if (typeof order.paymentId != "string" || !order.paymentId.startsWith("pi_")) {
+    throw new PaymentError(400, "Unknown payment");
+  }
+
   let used = await db.collection("order").findOne({ paymentId: order.paymentId });
   if (used) {
     throw new PaymentError(409, "This payment has already been used for an order");
@@ -65,7 +69,16 @@ async function verifyPayment(db, stripe, order) {
     throw new PaymentError(402, "The payment has not been completed");
   }
 
-  let { amount } = await priceOrder(db, order.lessonIDs, order.spaces);
+  let amount;
+  try {
+    amount = (await priceOrder(db, order.lessonIDs, order.spaces)).amount;
+  } catch (error) {
+    if (error.status == 409) {
+      await stripe.refunds.create({ payment_intent: order.paymentId });
+      throw new PaymentError(409, error.message + ". Sorry, it filled up while you were paying, so your payment has been refunded.");
+    }
+    throw error;
+  }
   if (intent.amount != amount) {
     throw new PaymentError(400, "The payment does not match the order total");
   }
